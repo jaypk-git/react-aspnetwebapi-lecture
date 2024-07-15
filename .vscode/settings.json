@@ -1,0 +1,28 @@
+{
+    "sqltools.connections": [
+        {
+            "database": "ORA10G",
+            "dialect": "OracleDB",
+            "name": "Honam U Dev",
+            "password": "qjw_!(_Rhc",
+            "port": 1521,
+            "server": "211.227.232.68",
+            "username": "HMAN",
+            "driver": "OracleDB"
+        },
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 3307,
+            "driver": "MySQL",
+            "name": "docker-nothwind",
+            "database": "northwind",
+            "username": "root",
+            "password": "supersecret"
+        }
+    ]
+}
