@@ -1,4 +1,4 @@
-# React와 ASP.NET Core 웹 API 5일 과정
+# React와 ASP.NET Core 웹 API Full Stack Development 5일 과정
 
 ## 류경석(MCT)
 
