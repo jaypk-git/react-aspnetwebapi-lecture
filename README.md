@@ -1,6 +1,5 @@
-# react-aspnetwebapi-lecture
 # React와 ASP.NET Core 웹 API 5일 과정
-
+##류경석(MCT)
 이 레포지토리는 React와 ASP.NET Core Web API를 활용한 5일간의 집중 과정을 위한 교육 자료와 예제 코드를 포함하고 있습니다.
 
 ## 과정 개요
