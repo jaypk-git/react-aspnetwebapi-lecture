@@ -1,4 +1,4 @@
-# React와 ASP.NET Core 웹 API 5일 과정
+# React와 ASP.NET Core 웹 API Full Stack Development 5일 과정
 
 ## 류경석(MCT)
 
@@ -23,19 +23,7 @@
 
 1. 이 레포지토리를 클론합니다:
    ```
-   git clone https://github.com/your-username/react-aspnetcore-course.git
-   ```
-
-2. 필요한 종속성을 설치합니다:
-   ```
-   cd react-aspnetcore-course
-   npm install
-   ```
-
-3. 데모 프로젝트를 실행합니다:
-   ```
-   cd demos/demo-app
-   npm start
+   git clone https://github.com/chris-ryu/react-aspnetcore-course.git
    ```
 
 ## 주요 기술 스택
