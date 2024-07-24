@@ -9,20 +9,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddCors(options =>
-{
-options.AddPolicy("AllowAll",
-policy =>
-{
-policy.AllowAnyOrigin() // 모든 도메인에서의 접근 허용
-.AllowAnyMethod() // 모든 HTTP 메소드 허용
-.AllowAnyHeader(); // 모든 헤더 허용
-});
-});
+services.AddCors(options => options.AddPolicy("AllowAll", p => p.AllowAnyOrigin()));
 
 var app = builder.Build();
 
-app.UseCors("AllowAll");
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
