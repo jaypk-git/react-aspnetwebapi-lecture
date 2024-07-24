@@ -316,3 +316,6 @@ const ProductManagementForm = () => {
 
 export default ProductManagementForm;
 ```
+![product-modal-form](https://github.com/user-attachments/assets/f9a91a07-4f4d-40a9-9271-2138cc36070a)
+
+
