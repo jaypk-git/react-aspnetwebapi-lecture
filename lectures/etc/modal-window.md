@@ -3,10 +3,19 @@
 ```
 npm install react-bootstrap bootstrap
 ```
-
+ModalExample.module.css
+```css
+.customModal {
+    max-width: 600px;
+}
+```
+ModalExample.jsx
 ```jsx
 import React, { useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
+
+import styles from './ModalExample.module.css';
+
 
 // Bootstrap CSS를 import 합니다.
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -23,7 +32,7 @@ function ModalExample() {
             Open Modal
             </Button>
 
-            <Modal show={show} onHide={handleClose}>
+            <Modal dialogClassName={styles.customModal} show={show} onHide={handleClose}>
                 <Modal.Header closeButton>
                     <Modal.Title>Title</Modal.Title>
                 </Modal.Header>
@@ -42,6 +51,7 @@ function ModalExample() {
 }
 
 export default ModalExample;
+
 
 ```
 
