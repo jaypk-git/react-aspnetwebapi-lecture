@@ -12,33 +12,33 @@ import { Button, Modal } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function ModalExample() {
-  const [show, setShow] = useState(false);
+    const [show, setShow] = useState(false);
 
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
 
-  return (
-    <>
-      <Button variant="primary" onClick={handleShow}>
-        모달 열기
-      </Button>
+    return (
+        <>
+            <Button variant="primary" onClick={handleShow}>
+            Open Modal
+            </Button>
 
-      <Modal show={show} onHide={handleClose}>
-        <Modal.Header closeButton>
-          <Modal.Title>모달 제목</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>여기에 모달의 내용을 넣으세요.</Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>
-            닫기
-          </Button>
-          <Button variant="primary" onClick={handleClose}>
-            저장
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </>
-  );
+            <Modal show={show} onHide={handleClose}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Title</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>Modal content</Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleClose}>
+                        Close
+                    </Button>
+                    <Button variant="primary" onClick={handleClose}>
+                        Save
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </>
+    );
 }
 
 export default ModalExample;
@@ -57,7 +57,7 @@ import ModalExample from './ModalExample';
 function App() {
   return (
     <div className="App">
-      <h1>React Bootstrap Modal 예제</h1>
+      <h1>React Bootstrap Modal Example</h1>
       <ModalExample />
     </div>
   );
