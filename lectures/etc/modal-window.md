@@ -5,6 +5,9 @@ npm install react-bootstrap bootstrap
 ```
 ModalExample.module.css
 ```css
+.customModal {
+     max-width: 800px;
+   }
    .customModal :global(.modal-dialog) {
      margin: 1.75rem auto;
    }
