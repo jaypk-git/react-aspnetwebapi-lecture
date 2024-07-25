@@ -1,8 +1,7 @@
 ```
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Northwind.Server.Models;
+using northwind_demo.Server.Models;
 
 namespace Northwind.Server.Controllers
 {
@@ -21,145 +20,52 @@ namespace Northwind.Server.Controllers
         [HttpGet]
         public async Task<IActionResult> GetEmployees(int page = 1)
         {
-            var query = _context.Employees.AsQueryable();
-
-            var totalItems = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalItems / (double)PageSize);
-
-            var employees = await query
-                .Skip((page - 1) * PageSize)
-                .Take(PageSize)
-                .Select(e => new
-                {
-                    e.EmployeeId,
-                    e.LastName,
-                    e.FirstName,
-                    e.Title,
-                    e.TitleOfCourtesy,
-                    e.BirthDate,
-                    e.HireDate,
-                    e.Address,
-                    e.City,
-                    e.Region,
-                    e.PostalCode,
-                    e.Country,
-                    e.HomePhone,
-                    e.Extension,
-                    e.Notes
-                })
-                .ToListAsync();
-
-            return Ok(new { employees, totalPages });
+            // TODO: 페이징을 적용하여 직원 목록을 반환하는 로직을 구현하세요.
+            throw new NotImplementedException();
         }
 
         [HttpGet("search")]
         public async Task<IActionResult> SearchEmployees(string lastName, string firstName, string title, int page = 1)
         {
-            var query = _context.Employees.AsQueryable();
-
-            if (!string.IsNullOrEmpty(lastName))
-                query = query.Where(e => e.LastName.Contains(lastName));
-
-            if (!string.IsNullOrEmpty(firstName))
-                query = query.Where(e => e.FirstName.Contains(firstName));
-
-            if (!string.IsNullOrEmpty(title))
-                query = query.Where(e => e.Title.Contains(title));
-
-            var totalItems = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalItems / (double)PageSize);
-
-            var employees = await query
-                .Skip((page - 1) * PageSize)
-                .Take(PageSize)
-                .Select(e => new
-                {
-                    e.EmployeeId,
-                    e.LastName,
-                    e.FirstName,
-                    e.Title,
-                    e.TitleOfCourtesy,
-                    e.BirthDate,
-                    e.HireDate,
-                    e.Address,
-                    e.City,
-                    e.Region,
-                    e.PostalCode,
-                    e.Country,
-                    e.HomePhone,
-                    e.Extension,
-                    e.Notes
-                })
-                .ToListAsync();
-
-            return Ok(new { employees, totalPages });
+            // TODO: 주어진 매개변수로 직원을 검색하고 결과를 반환하는 로직을 구현하세요.
+            throw new NotImplementedException();
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateEmployee([FromBody] Employee employee)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            _context.Employees.Add(employee);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetEmployee), new { id = employee.EmployeeId }, employee);
+            // TODO: 새 직원을 생성하는 로직을 구현하세요.
+            throw new NotImplementedException();
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateEmployee(int id, [FromBody] Employee employee)
         {
-            if (id != employee.EmployeeId)
-                return BadRequest();
-
-            _context.Entry(employee).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!EmployeeExists(id))
-                    return NotFound();
-                else
-                    throw;
-            }
-
-            return NoContent();
+            // TODO: 기존 직원 정보를 업데이트하는 로직을 구현하세요.
+            throw new NotImplementedException();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteEmployee(int id)
         {
-            var employee = await _context.Employees.FindAsync(id);
-            if (employee == null)
-                return NotFound();
-
-            _context.Employees.Remove(employee);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            // TODO: 직원을 삭제하는 로직을 구현하세요.
+            throw new NotImplementedException();
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetEmployee(int id)
         {
-            var employee = await _context.Employees.FindAsync(id);
-
-            if (employee == null)
-                return NotFound();
-
-            return Ok(employee);
+            // TODO: 특정 ID의 직원을 조회하는 로직을 구현하세요.
+            throw new NotImplementedException();
         }
 
         private bool EmployeeExists(int id)
         {
-            return _context.Employees.Any(e => e.EmployeeId == id);
+            // TODO: 직원 ID가 존재하는지 확인하는 로직을 구현하세요.
+            throw new NotImplementedException();
         }
-    }}
-
+    }
+}
 ```
 ```
 import React from 'react';
