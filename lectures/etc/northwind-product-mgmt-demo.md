@@ -404,5 +404,176 @@ const handleAddProduct = () => {
   </Col>
 </Row>
 ```
+```
+    const handleEdit = (product) => {
+        setEditingProduct(product);
+        setShowModal(true);
+    };
 
-이렇게 11단계로 나누어 데모를 진행할 수 있습니다. 각 단계에서 코드를 추가하면서 기능을 설명하고, 최종적으로 완성된 제품 관리 폼을 보여줄 수 있습니다.
+    const handleAddProduct = () => {
+        setEditingProduct(null);
+        setShowModal(true);
+    };
+
+```
+
+```
+<Modal show={showModal} onHide={handleCloseModal}>
+    <Modal.Header closeButton>
+        <Modal.Title>{editingProduct ? 'Edit Product' : 'Add New Product'}</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+        <Formik
+            initialValues={editingProduct ? {
+                ...editingProduct,
+                categoryId: editingProduct.category ? editingProduct.category.categoryId : '',
+                supplierId: editingProduct.supplier ? editingProduct.supplier.supplierId : '',
+            } : {
+                productName: '',
+                categoryId: '',
+                supplierId: '',
+                unitPrice: '',
+                unitsInStock: '',
+                unitsOnOrder: '',
+                reorderLevel: '',
+                discontinued: false
+            }}
+            validationSchema={productSchema}
+            onSubmit={handleSaveProduct}
+        >
+            {({ handleSubmit, handleChange, values, touched, errors }) => (
+                <Form onSubmit={handleSubmit}>
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Product Name</BootstrapForm.Label>
+                        <BootstrapForm.Control
+                            type="text"
+                            name="productName"
+                            value={values.productName}
+                            onChange={handleChange}
+                            isInvalid={touched.productName && errors.productName}
+                        />
+                        <BootstrapForm.Control.Feedback type="invalid">
+                            {errors.productName}
+                        </BootstrapForm.Control.Feedback>
+                    </BootstrapForm.Group>
+
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Category</BootstrapForm.Label>
+                        <BootstrapForm.Select
+                            name="categoryId"
+                            value={values.categoryId}
+                            onChange={handleChange}
+                            isInvalid={touched.categoryId && errors.categoryId}
+                        >
+                            <option value="">Select Category</option>
+                            {categories?.map(category => (
+                                <option key={category.categoryId} value={category.categoryId}>
+                                    {category.categoryName}
+                                </option>
+                            ))}
+                        </BootstrapForm.Select>
+                        <BootstrapForm.Control.Feedback type="invalid">
+                            {errors.categoryId}
+                        </BootstrapForm.Control.Feedback>
+                    </BootstrapForm.Group>
+
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Supplier</BootstrapForm.Label>
+                        <BootstrapForm.Select
+                            name="supplierId"
+                            value={values.supplierId}
+                            onChange={handleChange}
+                            isInvalid={touched.supplierId && errors.supplierId}
+                        >
+                            <option value="">Select Supplier</option>
+                            {suppliers?.map(supplier => (
+                                <option key={supplier.supplierId} value={supplier.supplierId}>
+                                    {supplier.companyName}
+                                </option>
+                            ))}
+                        </BootstrapForm.Select>
+                        <BootstrapForm.Control.Feedback type="invalid">
+                            {errors.supplierId}
+                        </BootstrapForm.Control.Feedback>
+                    </BootstrapForm.Group>
+
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Unit Price</BootstrapForm.Label>
+                        <BootstrapForm.Control
+                            type="number"
+                            step="0.01"
+                            name="unitPrice"
+                            value={values.unitPrice}
+                            onChange={handleChange}
+                            isInvalid={touched.unitPrice && errors.unitPrice}
+                        />
+                        <BootstrapForm.Control.Feedback type="invalid">
+                            {errors.unitPrice}
+                        </BootstrapForm.Control.Feedback>
+                    </BootstrapForm.Group>
+
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Units In Stock</BootstrapForm.Label>
+                        <BootstrapForm.Control
+                            type="number"
+                            name="unitsInStock"
+                            value={values.unitsInStock}
+                            onChange={handleChange}
+                            isInvalid={touched.unitsInStock && errors.unitsInStock}
+                        />
+                        <BootstrapForm.Control.Feedback type="invalid">
+                            {errors.unitsInStock}
+                        </BootstrapForm.Control.Feedback>
+                    </BootstrapForm.Group>
+
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Units On Order</BootstrapForm.Label>
+                        <BootstrapForm.Control
+                            type="number"
+                            name="unitsOnOrder"
+                            value={values.unitsOnOrder}
+                            onChange={handleChange}
+                            isInvalid={touched.unitsOnOrder && errors.unitsOnOrder}
+                        />
+                        <BootstrapForm.Control.Feedback type="invalid">
+                            {errors.unitsOnOrder}
+                        </BootstrapForm.Control.Feedback>
+                    </BootstrapForm.Group>
+
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Label>Reorder Level</BootstrapForm.Label>
+                        <BootstrapForm.Control
+                            type="number"
+                            name="reorderLevel"
+                            value={values.reorderLevel}
+                            onChange={handleChange}
+                            isInvalid={touched.reorderLevel && errors.reorderLevel}
+                        />
+                        <BootstrapForm.Control.Feedback type="invalid">
+                            {errors.reorderLevel}
+                        </BootstrapForm.Control.Feedback>
+                    </BootstrapForm.Group>
+
+                    <BootstrapForm.Group className="mb-3">
+                        <BootstrapForm.Check
+                            type="checkbox"
+                            label="Discontinued"
+                            name="discontinued"
+                            checked={values.discontinued}
+                            onChange={handleChange}
+                        />
+                    </BootstrapForm.Group>
+
+                    <Button variant="primary" type="submit">
+                        Save
+                    </Button>
+                    <Button variant="secondary" onClick={handleCloseModal}>
+                        Cancel
+                    </Button>
+                </Form>
+            )}
+        </Formik>
+    </Modal.Body>
+</Modal>
+
+```
