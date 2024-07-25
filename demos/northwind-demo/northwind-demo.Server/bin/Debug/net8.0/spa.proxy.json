@@ -1,0 +1,10 @@
+{
+"SpaProxyServer": {
+"ServerUrl": "https://localhost:5173",
+"RedirectUrl": "",
+"LaunchCommand": "npm run dev",
+"WorkingDirectory": "C:\\Users\\narzis.DESKTOP-AI02\\source\\repos\\northwind-demo\\northwind-demo.Server\\..\\northwind-demo.client",
+"MaxTimeoutInSeconds": "120",
+"KeepRunning": "false"
+}
+}

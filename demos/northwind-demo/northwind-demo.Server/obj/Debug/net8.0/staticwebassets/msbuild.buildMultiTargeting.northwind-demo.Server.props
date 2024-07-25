@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\northwind-demo.Server.props" />
+</Project>

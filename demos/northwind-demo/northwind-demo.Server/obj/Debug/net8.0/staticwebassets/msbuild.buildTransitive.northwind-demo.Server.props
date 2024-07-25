@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\buildMultiTargeting\northwind-demo.Server.props" />
+</Project>
