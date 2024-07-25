@@ -1,3 +1,6 @@
+```
+npm install react-bootstrap bootstrap react-query formik axios
+```
 ```jsx
 import { QueryClient, QueryClientProvider, useQuery } from 'react-query'
 
