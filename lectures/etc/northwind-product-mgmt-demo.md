@@ -404,6 +404,14 @@ const handleAddProduct = () => {
   </Col>
 </Row>
 ```
+
+```
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [showModal, setShowModal] = React.useState(false);
+    const [editingProduct, setEditingProduct] = React.useState(null);
+
+```
+
 ```
     const handleEdit = (product) => {
         setEditingProduct(product);
