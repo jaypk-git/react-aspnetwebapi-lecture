@@ -415,6 +415,17 @@ const handleAddProduct = () => {
         setShowModal(true);
     };
 
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setEditingProduct(null);
+    };
+
+    const handleSaveProduct = (values, { setSubmitting }) => {
+        saveMutation.mutate(values, {
+            onSettled: () => setSubmitting(false)
+        });
+    };
+
 ```
 
 ```
