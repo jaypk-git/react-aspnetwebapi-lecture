@@ -21,7 +21,7 @@ export default App;
 ```
 ```jsx
 import React from 'react';
-import { Container } from 'react-bootstrap';
+import { Container  } from 'react-bootstrap';
 
 const ProductManagementForm = () => {
   return (
@@ -38,8 +38,10 @@ export default ProductManagementForm;
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Formik, Form } from 'formik';
-import { Container, Row, Col, Button, Table, Modal, Form as BootstrapForm } from 'react-bootstrap';
+import { Container, Row, Col, Button, Table, Modal, Form as BootstrapForm, Pagination } from 'react-bootstrap';
 import * as Yup from 'yup';
+
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 // API 함수들
 const fetchProducts = async (page = 1) => {
