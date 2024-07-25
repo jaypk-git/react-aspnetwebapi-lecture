@@ -1,4 +1,4 @@
-```
+```jsx
 import React from 'react';
 import { Container } from 'react-bootstrap';
 
@@ -13,7 +13,7 @@ const ProductManagementForm = () => {
 export default ProductManagementForm;
 ```
 
-```
+```jsx
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Formik, Form } from 'formik';
@@ -40,7 +40,7 @@ const ProductManagementForm = () => {
 export default ProductManagementForm;
 ```
 
-```
+```jsx
 const ProductManagementForm = () => {
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -60,7 +60,7 @@ const ProductManagementForm = () => {
 };
 ```
 
-```
+```jsx
 const ProductManagementForm = () => {
   // ... (이전 코드)
 
@@ -132,7 +132,7 @@ const ProductManagementForm = () => {
 };
 ```
 
-```
+```jsx
 const ProductManagementForm = () => {
   // ... (이전 코드)
 
@@ -193,7 +193,7 @@ const ProductManagementForm = () => {
 };
 ```
 
-```
+```jsx
 const ProductManagementForm = () => {
   // ... (이전 코드)
 
@@ -223,7 +223,7 @@ const ProductManagementForm = () => {
 };
 ```
 
-```
+```jsx
 const ProductManagementForm = () => {
   // ... (이전 코드)
 
