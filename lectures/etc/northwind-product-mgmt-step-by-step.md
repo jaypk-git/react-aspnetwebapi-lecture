@@ -26,8 +26,56 @@ const fetchProducts = async (page = 1) => {
   if (!response.ok) throw new Error('Network response was not ok');
   return response.json();
 };
+const fetchCategories = async () => {
+    const response = await fetch('/api/products/categories');
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
 
-// 여기에 다른 API 함수들을 추가합니다 (fetchCategories, fetchSuppliers, searchProducts, deleteProduct, saveProduct)
+const fetchSuppliers = async () => {
+    const response = await fetch('/api/products/suppliers');
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
+
+const searchProducts = async (searchParams) => {
+    const queryParams = new URLSearchParams(searchParams).toString();
+    const response = await fetch(`/api/products/search?${queryParams}`);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
+
+const deleteProduct = async (productId) => {
+    const response = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
+
+const saveProduct = async (product) => {
+    const url = product.productId ? `/api/products/${product.productId}` : '/api/products';
+    const method = product.productId ? 'PUT' : 'POST';
+    const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
+
+// Validation schema
+const productSchema = Yup.object().shape({
+    productName: Yup.string().required('Product name is required'),
+    categoryId: Yup.number().required('Category is required'),
+    supplierId: Yup.number().required('Supplier is required'),
+    unitPrice: Yup.number().positive('Unit price must be positive').required('Unit price is required'),
+    unitsInStock: Yup.number().integer('Units in stock must be an integer').min(0, 'Units in stock must be non-negative').required('Units in stock is required'),
+    unitsOnOrder: Yup.number().integer('Units on order must be an integer').min(0, 'Units on order must be non-negative').required('Units on order is required'),
+    reorderLevel: Yup.number().integer('Reorder level must be an integer').min(0, 'Reorder level must be non-negative').required('Reorder level is required'),
+    discontinued: Yup.boolean()
+});
+
+
 
 const ProductManagementForm = () => {
   return (
