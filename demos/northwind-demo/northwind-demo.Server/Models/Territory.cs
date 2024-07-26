@@ -13,7 +13,7 @@ public partial class Territory
 
     public int RegionId { get; set; }
 
-    public virtual Region Region { get; set; }
+    public virtual ICollection<EmployeeTerritory> EmployeeTerritories { get; set; } = new List<EmployeeTerritory>();
 
-    public virtual ICollection<Employee> Employees { get; set; } = new List<Employee>();
+    public virtual Region Region { get; set; }
 }

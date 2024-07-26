@@ -28,27 +28,62 @@ namespace Northwind.Server.Controllers
             var employees = await query
                 .Skip((page - 1) * PageSize)
                 .Take(PageSize)
-                .Select(e => new
+                .Select(e => new EmployeeDTO
                 {
-                    e.EmployeeId,
-                    e.LastName,
-                    e.FirstName,
-                    e.Title,
-                    e.TitleOfCourtesy,
-                    e.BirthDate,
-                    e.HireDate,
-                    e.Address,
-                    e.City,
-                    e.Region,
-                    e.PostalCode,
-                    e.Country,
-                    e.HomePhone,
-                    e.Extension,
-                    e.Notes
+                    EmployeeID = e.EmployeeId,
+                    LastName = e.LastName,
+                    FirstName = e.FirstName,
+                    Title = e.Title,
+                    TitleOfCourtesy = e.TitleOfCourtesy,
+                    BirthDate = e.BirthDate,
+                    HireDate = e.HireDate,
+                    Address = e.Address,
+                    City = e.City,
+                    Region = e.Region,
+                    PostalCode = e.PostalCode,
+                    Country = e.Country,
+                    HomePhone = e.HomePhone,
+                    Extension = e.Extension,
+                    Notes = e.Notes,
+                    ReportsTo = e.ReportsTo,
+                    PhotoPath = e.PhotoPath
                 })
                 .ToListAsync();
 
             return Ok(new { employees, totalPages });
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetEmployee(int id)
+        {
+            var employee = await _context.Employees
+                .Where(e => e.EmployeeId == id)
+                .Select(e => new EmployeeDTO
+                {
+                    EmployeeID = e.EmployeeId,
+                    LastName = e.LastName,
+                    FirstName = e.FirstName,
+                    Title = e.Title,
+                    TitleOfCourtesy = e.TitleOfCourtesy,
+                    BirthDate = e.BirthDate,
+                    HireDate = e.HireDate,
+                    Address = e.Address,
+                    City = e.City,
+                    Region = e.Region,
+                    PostalCode = e.PostalCode,
+                    Country = e.Country,
+                    HomePhone = e.HomePhone,
+                    Extension = e.Extension,
+                    Notes = e.Notes,
+                    ReportsTo = e.ReportsTo,
+                    PhotoPath = e.PhotoPath
+                })
+                .FirstOrDefaultAsync();
+
+            if (employee == null)
+                return NotFound();
+
+            return Ok(employee);
         }
 
         [HttpGet("search")]
@@ -71,23 +106,25 @@ namespace Northwind.Server.Controllers
             var employees = await query
                 .Skip((page - 1) * PageSize)
                 .Take(PageSize)
-                .Select(e => new
+                .Select(e => new EmployeeDTO
                 {
-                    e.EmployeeId,
-                    e.LastName,
-                    e.FirstName,
-                    e.Title,
-                    e.TitleOfCourtesy,
-                    e.BirthDate,
-                    e.HireDate,
-                    e.Address,
-                    e.City,
-                    e.Region,
-                    e.PostalCode,
-                    e.Country,
-                    e.HomePhone,
-                    e.Extension,
-                    e.Notes
+                    EmployeeID = e.EmployeeId,
+                    LastName = e.LastName,
+                    FirstName = e.FirstName,
+                    Title = e.Title,
+                    TitleOfCourtesy = e.TitleOfCourtesy,
+                    BirthDate = e.BirthDate,
+                    HireDate = e.HireDate,
+                    Address = e.Address,
+                    City = e.City,
+                    Region = e.Region,
+                    PostalCode = e.PostalCode,
+                    Country = e.Country,
+                    HomePhone = e.HomePhone,
+                    Extension = e.Extension,
+                    Notes = e.Notes,
+                    ReportsTo = e.ReportsTo,
+                    PhotoPath = e.PhotoPath
                 })
                 .ToListAsync();
 
@@ -95,24 +132,104 @@ namespace Northwind.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateEmployee([FromBody] Employee employee)
+        public async Task<IActionResult> CreateEmployee([FromBody] EmployeeDTO employeeDTO)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            var employee = new Employee
+            {
+                LastName = employeeDTO.LastName,
+                FirstName = employeeDTO.FirstName,
+                Title = employeeDTO.Title,
+                TitleOfCourtesy = employeeDTO.TitleOfCourtesy,
+                BirthDate = employeeDTO.BirthDate,
+                HireDate = employeeDTO.HireDate,
+                Address = employeeDTO.Address,
+                City = employeeDTO.City,
+                Region = employeeDTO.Region,
+                PostalCode = employeeDTO.PostalCode,
+                Country = employeeDTO.Country,
+                HomePhone = employeeDTO.HomePhone,
+                Extension = employeeDTO.Extension,
+                Notes = employeeDTO.Notes,
+                ReportsTo = employeeDTO.ReportsTo,
+                PhotoPath = employeeDTO.PhotoPath
+            };
+
             _context.Employees.Add(employee);
             await _context.SaveChangesAsync();
+
+            // Add selected territories
+            if (employeeDTO.Territories != null)
+            {
+                foreach (var territory in employeeDTO.Territories.Where(t => t.IsSelected))
+                {
+                    _context.EmployeeTerritories.Add(new EmployeeTerritory
+                    {
+                        EmployeeId = employee.EmployeeId,
+                        TerritoryId = territory.TerritoryID
+                    });
+                }
+                await _context.SaveChangesAsync();
+            }
 
             return CreatedAtAction(nameof(GetEmployee), new { id = employee.EmployeeId }, employee);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] Employee employee)
+        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] EmployeeDTO employeeDTO)
         {
-            if (id != employee.EmployeeId)
+            if (id != employeeDTO.EmployeeID)
                 return BadRequest();
 
-            _context.Entry(employee).State = EntityState.Modified;
+            var employee = await _context.Employees.FindAsync(id);
+            if (employee == null)
+                return NotFound();
+
+            employee.LastName = employeeDTO.LastName;
+            employee.FirstName = employeeDTO.FirstName;
+            employee.Title = employeeDTO.Title;
+            employee.TitleOfCourtesy = employeeDTO.TitleOfCourtesy;
+            employee.BirthDate = employeeDTO.BirthDate;
+            employee.HireDate = employeeDTO.HireDate;
+            employee.Address = employeeDTO.Address;
+            employee.City = employeeDTO.City;
+            employee.Region = employeeDTO.Region;
+            employee.PostalCode = employeeDTO.PostalCode;
+            employee.Country = employeeDTO.Country;
+            employee.HomePhone = employeeDTO.HomePhone;
+            employee.Extension = employeeDTO.Extension;
+            employee.Notes = employeeDTO.Notes;
+            employee.ReportsTo = employeeDTO.ReportsTo;
+            employee.PhotoPath = employeeDTO.PhotoPath;
+
+            // Update territories
+            var currentTerritories = await _context.EmployeeTerritories
+                .Where(et => et.EmployeeId == id)
+                .ToListAsync();
+
+            // Remove territories that are not selected
+            foreach (var territory in currentTerritories)
+            {
+                if (!employeeDTO.Territories.Any(t => t.TerritoryID == territory.TerritoryId && t.IsSelected))
+                {
+                    _context.EmployeeTerritories.Remove(territory);
+                }
+            }
+
+            // Add newly selected territories
+            foreach (var territory in employeeDTO.Territories.Where(t => t.IsSelected))
+            {
+                if (!currentTerritories.Any(t => t.TerritoryId == territory.TerritoryID))
+                {
+                    _context.EmployeeTerritories.Add(new EmployeeTerritory
+                    {
+                        EmployeeId = id,
+                        TerritoryId = territory.TerritoryID
+                    });
+                }
+            }
 
             try
             {
@@ -142,19 +259,46 @@ namespace Northwind.Server.Controllers
             return NoContent();
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetEmployee(int id)
+        [HttpGet("territories")]
+        public async Task<IActionResult> GetAllTerritories()
         {
-            var employee = await _context.Employees.FindAsync(id);
+            var territories = await _context.Territories
+                .Select(t => new TerritoryDTO
+                {
+                    TerritoryID = t.TerritoryId,
+                    TerritoryDescription = t.TerritoryDescription,
+                    RegionID = t.RegionId,
+                    IsSelected = false
+                })
+                .ToListAsync();
 
-            if (employee == null)
-                return NotFound();
+            return Ok(territories);
+        }
 
-            return Ok(employee);
+        [HttpGet("{id}/territories")]
+        public async Task<IActionResult> GetEmployeeTerritories(int id)
+        {
+            var employeeTerritories = await _context.EmployeeTerritories
+                .Where(et => et.EmployeeId == id)
+                .Select(et => et.TerritoryId)
+                .ToListAsync();
+
+            var allTerritories = await _context.Territories
+                .Select(t => new TerritoryDTO
+                {
+                    TerritoryID = t.TerritoryId,
+                    TerritoryDescription = t.TerritoryDescription,
+                    RegionID = t.RegionId,
+                    IsSelected = employeeTerritories.Contains(t.TerritoryId)
+                })
+                .ToListAsync();
+
+            return Ok(allTerritories);
         }
 
         private bool EmployeeExists(int id)
         {
             return _context.Employees.Any(e => e.EmployeeId == id);
         }
-    }}
+    }
+}

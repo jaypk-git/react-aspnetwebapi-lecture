@@ -25,9 +25,13 @@ public partial class NorthwindContext : DbContext
 
     public virtual DbSet<CustomerAndSuppliersByCity> CustomerAndSuppliersByCities { get; set; }
 
+    public virtual DbSet<CustomerCustomerDemo> CustomerCustomerDemos { get; set; }
+
     public virtual DbSet<CustomerDemographic> CustomerDemographics { get; set; }
 
     public virtual DbSet<Employee> Employees { get; set; }
+
+    public virtual DbSet<EmployeeTerritory> EmployeeTerritories { get; set; }
 
     public virtual DbSet<Invoice> Invoices { get; set; }
 
@@ -152,31 +156,6 @@ public partial class NorthwindContext : DbContext
             entity.Property(e => e.Phone).HasMaxLength(24);
             entity.Property(e => e.PostalCode).HasMaxLength(10);
             entity.Property(e => e.Region).HasMaxLength(15);
-
-            entity.HasMany(d => d.CustomerTypes).WithMany(p => p.Customers)
-                .UsingEntity<Dictionary<string, object>>(
-                    "CustomerCustomerDemo",
-                    r => r.HasOne<CustomerDemographic>().WithMany()
-                        .HasForeignKey("CustomerTypeId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK_CustomerCustomerDemo"),
-                    l => l.HasOne<Customer>().WithMany()
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK_CustomerCustomerDemo_Customers"),
-                    j =>
-                    {
-                        j.HasKey("CustomerId", "CustomerTypeId").IsClustered(false);
-                        j.ToTable("CustomerCustomerDemo");
-                        j.IndexerProperty<string>("CustomerId")
-                            .HasMaxLength(5)
-                            .IsFixedLength()
-                            .HasColumnName("CustomerID");
-                        j.IndexerProperty<string>("CustomerTypeId")
-                            .HasMaxLength(10)
-                            .IsFixedLength()
-                            .HasColumnName("CustomerTypeID");
-                    });
         });
 
         modelBuilder.Entity<CustomerAndSuppliersByCity>(entity =>
@@ -194,6 +173,32 @@ public partial class NorthwindContext : DbContext
                 .IsRequired()
                 .HasMaxLength(9)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<CustomerCustomerDemo>(entity =>
+        {
+            entity.HasKey(e => new { e.CustomerId, e.CustomerTypeId }).IsClustered(false);
+
+            entity.ToTable("CustomerCustomerDemo");
+
+            entity.Property(e => e.CustomerId)
+                .HasMaxLength(5)
+                .IsFixedLength()
+                .HasColumnName("CustomerID");
+            entity.Property(e => e.CustomerTypeId)
+                .HasMaxLength(10)
+                .IsFixedLength()
+                .HasColumnName("CustomerTypeID");
+
+            entity.HasOne(d => d.Customer).WithMany(p => p.CustomerCustomerDemos)
+                .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_CustomerCustomerDemo_Customers");
+
+            entity.HasOne(d => d.CustomerType).WithMany(p => p.CustomerCustomerDemos)
+                .HasForeignKey(d => d.CustomerTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_CustomerCustomerDemo");
         });
 
         modelBuilder.Entity<CustomerDemographic>(entity =>
@@ -238,27 +243,26 @@ public partial class NorthwindContext : DbContext
             entity.HasOne(d => d.ReportsToNavigation).WithMany(p => p.InverseReportsToNavigation)
                 .HasForeignKey(d => d.ReportsTo)
                 .HasConstraintName("FK_Employees_Employees");
+        });
 
-            entity.HasMany(d => d.Territories).WithMany(p => p.Employees)
-                .UsingEntity<Dictionary<string, object>>(
-                    "EmployeeTerritory",
-                    r => r.HasOne<Territory>().WithMany()
-                        .HasForeignKey("TerritoryId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK_EmployeeTerritories_Territories"),
-                    l => l.HasOne<Employee>().WithMany()
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK_EmployeeTerritories_Employees"),
-                    j =>
-                    {
-                        j.HasKey("EmployeeId", "TerritoryId").IsClustered(false);
-                        j.ToTable("EmployeeTerritories");
-                        j.IndexerProperty<int>("EmployeeId").HasColumnName("EmployeeID");
-                        j.IndexerProperty<string>("TerritoryId")
-                            .HasMaxLength(20)
-                            .HasColumnName("TerritoryID");
-                    });
+        modelBuilder.Entity<EmployeeTerritory>(entity =>
+        {
+            entity.HasKey(e => new { e.EmployeeId, e.TerritoryId }).IsClustered(false);
+
+            entity.Property(e => e.EmployeeId).HasColumnName("EmployeeID");
+            entity.Property(e => e.TerritoryId)
+                .HasMaxLength(20)
+                .HasColumnName("TerritoryID");
+
+            entity.HasOne(d => d.Employee).WithMany(p => p.EmployeeTerritories)
+                .HasForeignKey(d => d.EmployeeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_EmployeeTerritories_Employees");
+
+            entity.HasOne(d => d.Territory).WithMany(p => p.EmployeeTerritories)
+                .HasForeignKey(d => d.TerritoryId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_EmployeeTerritories_Territories");
         });
 
         modelBuilder.Entity<Invoice>(entity =>

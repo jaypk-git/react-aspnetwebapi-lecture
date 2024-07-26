@@ -1,13 +1,13 @@
-import { QueryClient, QueryClientProvider, useQuery } from 'react-query'
+import { QueryClient, QueryClientProvider } from 'react-query'
 
 import './App.css';
-import ProductManagementForm from './ProductManagementForm';
+import EmployeeManagementForm from './EmployeeManagementForm';
 const queryClient = new QueryClient()
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-        <ProductManagementForm />
+        <EmployeeManagementForm />
     </QueryClientProvider>
   )
 }
