@@ -720,7 +720,7 @@ const EmployeeManagementForm = () => {
               notes: '',
               reportsTo: null,
               photoPath: '',
-              territories: allTerritories
+              territories: allTerritories.map(t => ({ ...t, isSelected: false }))
             }}
             validationSchema={employeeSchema}
             onSubmit={handleSaveEmployee}
