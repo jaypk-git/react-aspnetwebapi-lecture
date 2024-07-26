@@ -1,295 +1,517 @@
+## Product Controller
+```C#
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ProductsController : ControllerBase
+    {
+        private readonly NorthwindContext _context;
+        private const int PageSize = 10;
 
+        public ProductsController(NorthwindContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetProducts(int page = 1)
+        {
+            var query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Supplier);
+
+            var totalItems = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalItems / (double)PageSize);
+
+            var products = await query
+                .Skip((page - 1) * PageSize)
+                .Take(PageSize)
+                .Select(p => new
+                {
+                    p.ProductId,
+                    p.ProductName,
+                    Category = new { p.Category.CategoryId, p.Category.CategoryName },
+                    Supplier = new { p.Supplier.SupplierId, p.Supplier.CompanyName },
+                    p.UnitPrice,
+                    p.UnitsInStock,
+                    p.UnitsOnOrder
+                })
+                .ToListAsync();
+
+            return Ok(new { products, totalPages });
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchProducts(string productName, int? categoryId, int? supplierId, int page = 1)
+        {
+            var query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Supplier)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(productName))
+                query = query.Where(p => p.ProductName.Contains(productName));
+
+            if (categoryId.HasValue)
+                query = query.Where(p => p.CategoryId == categoryId);
+
+            if (supplierId.HasValue)
+                query = query.Where(p => p.SupplierId == supplierId);
+
+            var totalItems = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalItems / (double)PageSize);
+
+            var products = await query
+                .Skip((page - 1) * PageSize)
+                .Take(PageSize)
+                .Select(p => new
+                {
+                    p.ProductId,
+                    p.ProductName,
+                    Category = new { p.Category.CategoryId, p.Category.CategoryName },
+                    Supplier = new { p.Supplier.SupplierId, p.Supplier.CompanyName },
+                    p.UnitPrice,
+                    p.UnitsInStock,
+                    p.UnitsOnOrder
+                })
+                .ToListAsync();
+
+            return Ok(new { products, totalPages });
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProduct(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+                return NotFound();
+
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpGet("categories")]
+        public async Task<IActionResult> GetCategories()
+        {
+            var categories = await _context.Categories
+                .Select(c => new { c.CategoryId, c.CategoryName })
+                .ToListAsync();
+
+            return Ok(categories);
+        }
+
+        [HttpGet("suppliers")]
+        public async Task<IActionResult> GetSuppliers()
+        {
+            var suppliers = await _context.Suppliers
+                .Select(s => new { s.SupplierId, s.CompanyName })
+                .ToListAsync();
+
+            return Ok(suppliers);
+        }
+    }
+```
 ## 초기 폼
 
 ```javascript
-import React, { useState, useEffect } from 'react';
-import { Formik, Form } from 'formik';
-import axios from 'axios';
-import { 
-  Table, 
-  Button, 
-  Form as BootstrapForm, 
-  Container, 
-  Row, 
-  Col, 
-  Pagination 
-} from 'react-bootstrap';
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import { Container, Row, Col, Button, Table, Modal, Form as BootstrapForm, Pagination, Card } from 'react-bootstrap';
+import * as Yup from 'yup';
+
 import 'bootstrap/dist/css/bootstrap.min.css';
+// API 함수들
+const fetchProducts = async (page = 1) => {
+    const response = await fetch(`/api/products?page=${page}`);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
+
+const fetchCategories = async () => {
+    const response = await fetch('/api/products/categories');
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
+
+const fetchSuppliers = async () => {
+    const response = await fetch('/api/products/suppliers');
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
+
+const searchProducts = async (searchParams) => {
+    const queryParams = new URLSearchParams(searchParams).toString();
+    const response = await fetch(`/api/products/search?${queryParams}`);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
+
+const deleteProduct = async (productId) => {
+    const response = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
+
+const saveProduct = async (product) => {
+    const url = product.productId ? `/api/products/${product.productId}` : '/api/products';
+    const method = product.productId ? 'PUT' : 'POST';
+    const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return response.json();
+};
+
+// Validation schema
+const productSchema = Yup.object().shape({
+    productName: Yup.string().required('Product name is required'),
+    categoryId: Yup.number().required('Category is required'),
+    supplierId: Yup.number().required('Supplier is required'),
+    unitPrice: Yup.number().positive('Unit price must be positive').required('Unit price is required'),
+    unitsInStock: Yup.number().integer('Units in stock must be an integer').min(0, 'Units in stock must be non-negative').required('Units in stock is required'),
+    unitsOnOrder: Yup.number().integer('Units on order must be an integer').min(0, 'Units on order must be non-negative').required('Units on order is required'),
+    reorderLevel: Yup.number().integer('Reorder level must be an integer').min(0, 'Reorder level must be non-negative').required('Reorder level is required'),
+    discontinued: Yup.boolean()
+});
+
 
 const ProductManagementForm = () => {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+    const queryClient = useQueryClient();
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [showModal, setShowModal] = React.useState(false);
+    const [editingProduct, setEditingProduct] = React.useState(null);
 
-  useEffect(() => {
-    // Step 1: Fetch initial data
-  }, [currentPage]);
+    const { data: productsData } = useQuery(['products', currentPage], () => fetchProducts(currentPage));
+    const { data: categories } = useQuery('categories', fetchCategories);
+    const { data: suppliers } = useQuery('suppliers', fetchSuppliers);
 
-  const fetchProducts = async () => {
-    // Step 2: Implement fetchProducts
-  };
+    const searchMutation = useMutation(searchProducts, {
+        onSuccess: (data) => {
+            queryClient.setQueryData(['products', currentPage], data);
+        },
+    });
 
-  const fetchCategories = async () => {
-    // Step 3: Implement fetchCategories
-  };
+    const deleteMutation = useMutation(deleteProduct, {
+        onSuccess: () => {
+            queryClient.invalidateQueries(['products', currentPage]);
+        },
+    });
 
-  const fetchSuppliers = async () => {
-    // Step 4: Implement fetchSuppliers
-  };
+    const saveMutation = useMutation(saveProduct, {
+        onSuccess: () => {
+            queryClient.invalidateQueries(['products', currentPage]);
+            setShowModal(false);
+        },
+    });
 
-  const handleSearch = async (values) => {
-    // Step 5: Implement handleSearch
-  };
+    const handleSearch = (values) => {
+        searchMutation.mutate(values);
+    };
 
-  const handleEdit = (productId) => {
-    // Step 6: Implement handleEdit
-  };
+    const handleDelete = (productId) => {
+        if (window.confirm('Are you sure you want to delete this product?')) {
+            deleteMutation.mutate(productId);
+        }
+    };
 
-  const handleDelete = async (productId) => {
-    // Step 7: Implement handleDelete
-  };
+    const handleEdit = (product) => {
+        setEditingProduct(product);
+        setShowModal(true);
+    };
 
-  const handleAddProduct = () => {
-    // Step 8: Implement handleAddProduct
-  };
+    const handleAddProduct = () => {
+        setEditingProduct(null);
+        setShowModal(true);
+    };
 
-  return (
-    <Container className="mt-4">
-      {/* Step 9: Implement search form */}
-      
-      {/* Step 10: Implement product table */}
-      
-      {/* Step 11: Implement pagination and add product button */}
-    </Container>
-  );
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setEditingProduct(null);
+    };
+
+    const handleSaveProduct = (values, { setSubmitting }) => {
+        saveMutation.mutate(values, {
+            onSettled: () => setSubmitting(false)
+        });
+    };
+
+    return (
+        <Container className="mt-4">
+            <Card>
+                <Card.Header as="h5">제품 관리</Card.Header>
+                <Card.Body>
+                    <Formik
+                        initialValues={{ productName: '', categoryId: '', supplierId: '' }}
+                        onSubmit={handleSearch}
+                    >
+                        {({ handleSubmit, handleChange, values }) => (
+                            <Form onSubmit={handleSubmit}>
+                                <Row className="mb-3 align-items-end">
+                                    <Col xs={3}>
+                                        <BootstrapForm.Control
+                                            name="productName"
+                                            value={values.productName}
+                                            onChange={handleChange}
+                                            placeholder="제품명"
+                                        />
+                                    </Col>
+                                    <Col xs={3}>
+                                        <BootstrapForm.Select
+                                            name="categoryId"
+                                            value={values.categoryId}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">카테고리 선택</option>
+                                            {categories?.map(category => (
+                                                <option key={category.categoryId} value={category.categoryId}>
+                                                    {category.categoryName}
+                                                </option>
+                                            ))}
+                                        </BootstrapForm.Select>
+                                    </Col>
+                                    <Col xs={3}>
+                                        <BootstrapForm.Select
+                                            name="supplierId"
+                                            value={values.supplierId}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">공급업체 선택</option>
+                                            {suppliers?.map(supplier => (
+                                                <option key={supplier.supplierId} value={supplier.supplierId}>
+                                                    {supplier.companyName}
+                                                </option>
+                                            ))}
+                                        </BootstrapForm.Select>
+                                    </Col>
+                                    <Col xs={3}>
+                                        <Button type="submit" variant="primary" className="w-100">검색</Button>
+                                    </Col>
+                                </Row>
+                            </Form>
+                        )}
+                    </Formik>
+
+                    <Table striped bordered hover>
+                        <thead className="bg-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>제품명</th>
+                                <th>카테고리</th>
+                                <th>공급업체</th>
+                                <th>단가</th>
+                                <th>재고</th>
+                                <th>주문량</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {productsData?.products.map(product => (
+                                <tr key={product.productId}>
+                                    <td>{product.productId}</td>
+                                    <td>{product.productName}</td>
+                                    <td>{product.category.categoryName}</td>
+                                    <td>{product.supplier.companyName}</td>
+                                    <td>{product.unitPrice}</td>
+                                    <td>{product.unitsInStock}</td>
+                                    <td>{product.unitsOnOrder}</td>
+                                    <td>
+                                        <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleEdit(product)}>수정</Button>
+                                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(product.productId)}>삭제</Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+
+                    <Row className="mt-3">
+                        <Col>
+                            <Button variant="success" onClick={handleAddProduct}>제품 추가</Button>
+                        </Col>
+                        <Col className="d-flex justify-content-end">
+                            <Pagination>
+                                <Pagination.Prev onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} />
+                                {[...Array(productsData?.totalPages || 0).keys()].map(number => (
+                                    <Pagination.Item
+                                        key={number + 1}
+                                        active={number + 1 === currentPage}
+                                        onClick={() => setCurrentPage(number + 1)}
+                                    >
+                                        {number + 1}
+                                    </Pagination.Item>
+                                ))}
+                                <Pagination.Next onClick={() => setCurrentPage(prev => Math.min(prev + 1, productsData?.totalPages || 1))} />
+                            </Pagination>
+                        </Col>
+                    </Row>
+                </Card.Body>
+            </Card>
+
+            <Modal show={showModal} onHide={handleCloseModal}>
+                <Modal.Header closeButton>
+                    <Modal.Title>{editingProduct ? 'Edit Product' : 'Add New Product'}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Formik
+                        initialValues={editingProduct ? {
+                            ...editingProduct,
+                            categoryId: editingProduct.category ? editingProduct.category.categoryId : '',
+                            supplierId: editingProduct.supplier ? editingProduct.supplier.supplierId : '',
+                        } : {
+                            productName: '',
+                            categoryId: '',
+                            supplierId: '',
+                            unitPrice: '',
+                            unitsInStock: '',
+                            unitsOnOrder: '',
+                            reorderLevel: '',
+                            discontinued: false
+                        }}
+                        validationSchema={productSchema}
+                        onSubmit={handleSaveProduct}
+                    >
+                        {({ handleSubmit, handleChange, values, touched, errors }) => (
+                            <Form onSubmit={handleSubmit}>
+                                <BootstrapForm.Group className="mb-3">
+                                    <BootstrapForm.Label>Product Name</BootstrapForm.Label>
+                                    <BootstrapForm.Control
+                                        type="text"
+                                        name="productName"
+                                        value={values.productName}
+                                        onChange={handleChange}
+                                        isInvalid={touched.productName && errors.productName}
+                                    />
+                                    <BootstrapForm.Control.Feedback type="invalid">
+                                        {errors.productName}
+                                    </BootstrapForm.Control.Feedback>
+                                </BootstrapForm.Group>
+
+                                <BootstrapForm.Group className="mb-3">
+                                    <BootstrapForm.Label>Category</BootstrapForm.Label>
+                                    <BootstrapForm.Select
+                                        name="categoryId"
+                                        value={values.categoryId}
+                                        onChange={handleChange}
+                                        isInvalid={touched.categoryId && errors.categoryId}
+                                    >
+                                        <option value="">Select Category</option>
+                                        {categories?.map(category => (
+                                            <option key={category.categoryId} value={category.categoryId}>
+                                                {category.categoryName}
+                                            </option>
+                                        ))}
+                                    </BootstrapForm.Select>
+                                    <BootstrapForm.Control.Feedback type="invalid">
+                                        {errors.categoryId}
+                                    </BootstrapForm.Control.Feedback>
+                                </BootstrapForm.Group>
+
+                                <BootstrapForm.Group className="mb-3">
+                                    <BootstrapForm.Label>Supplier</BootstrapForm.Label>
+                                    <BootstrapForm.Select
+                                        name="supplierId"
+                                        value={values.supplierId}
+                                        onChange={handleChange}
+                                        isInvalid={touched.supplierId && errors.supplierId}
+                                    >
+                                        <option value="">Select Supplier</option>
+                                        {suppliers?.map(supplier => (
+                                            <option key={supplier.supplierId} value={supplier.supplierId}>
+                                                {supplier.companyName}
+                                            </option>
+                                        ))}
+                                    </BootstrapForm.Select>
+                                    <BootstrapForm.Control.Feedback type="invalid">
+                                        {errors.supplierId}
+                                    </BootstrapForm.Control.Feedback>
+                                </BootstrapForm.Group>
+
+                                <BootstrapForm.Group className="mb-3">
+                                    <BootstrapForm.Label>Unit Price</BootstrapForm.Label>
+                                    <BootstrapForm.Control
+                                        type="number"
+                                        step="0.01"
+                                        name="unitPrice"
+                                        value={values.unitPrice}
+                                        onChange={handleChange}
+                                        isInvalid={touched.unitPrice && errors.unitPrice}
+                                    />
+                                    <BootstrapForm.Control.Feedback type="invalid">
+                                        {errors.unitPrice}
+                                    </BootstrapForm.Control.Feedback>
+                                </BootstrapForm.Group>
+
+                                <BootstrapForm.Group className="mb-3">
+                                    <BootstrapForm.Label>Units In Stock</BootstrapForm.Label>
+                                    <BootstrapForm.Control
+                                        type="number"
+                                        name="unitsInStock"
+                                        value={values.unitsInStock}
+                                        onChange={handleChange}
+                                        isInvalid={touched.unitsInStock && errors.unitsInStock}
+                                    />
+                                    <BootstrapForm.Control.Feedback type="invalid">
+                                        {errors.unitsInStock}
+                                    </BootstrapForm.Control.Feedback>
+                                </BootstrapForm.Group>
+
+                                <BootstrapForm.Group className="mb-3">
+                                    <BootstrapForm.Label>Units On Order</BootstrapForm.Label>
+                                    <BootstrapForm.Control
+                                        type="number"
+                                        name="unitsOnOrder"
+                                        value={values.unitsOnOrder}
+                                        onChange={handleChange}
+                                        isInvalid={touched.unitsOnOrder && errors.unitsOnOrder}
+                                    />
+                                    <BootstrapForm.Control.Feedback type="invalid">
+                                        {errors.unitsOnOrder}
+                                    </BootstrapForm.Control.Feedback>
+                                </BootstrapForm.Group>
+
+                                <BootstrapForm.Group className="mb-3">
+                                    <BootstrapForm.Label>Reorder Level</BootstrapForm.Label>
+                                    <BootstrapForm.Control
+                                        type="number"
+                                        name="reorderLevel"
+                                        value={values.reorderLevel}
+                                        onChange={handleChange}
+                                        isInvalid={touched.reorderLevel && errors.reorderLevel}
+                                    />
+                                    <BootstrapForm.Control.Feedback type="invalid">
+                                        {errors.reorderLevel}
+                                    </BootstrapForm.Control.Feedback>
+                                </BootstrapForm.Group>
+
+                                <BootstrapForm.Group className="mb-3">
+                                    <BootstrapForm.Check
+                                        type="checkbox"
+                                        label="Discontinued"
+                                        name="discontinued"
+                                        checked={values.discontinued}
+                                        onChange={handleChange}
+                                    />
+                                </BootstrapForm.Group>
+
+                                <Button variant="primary" type="submit">
+                                    Save
+                                </Button>
+                                <Button variant="secondary" onClick={handleCloseModal}>
+                                    Cancel
+                                </Button>
+                            </Form>
+                        )}
+                    </Formik>
+                </Modal.Body>
+            </Modal>
+        </Container>
+    );
 };
 
 export default ProductManagementForm;
 
+
 ```
-
-이제 각 단계별 스크립트와 코드를 제공하겠습니다:
-
-1단계: 초기 데이터 가져오기
-스크립트: "먼저, 컴포넌트가 마운트될 때 초기 데이터를 가져오는 useEffect 훅을 구현합니다."
-
-```javascript
-useEffect(() => {
-  fetchProducts();
-  fetchCategories();
-  fetchSuppliers();
-}, [currentPage]);
-```
-
-2단계: fetchProducts 구현
-스크립트: "제품 목록을 가져오는 fetchProducts 함수를 구현합니다. 이 함수는 현재 페이지에 해당하는 제품을 가져옵니다."
-
-```javascript
-const fetchProducts = async () => {
-  try {
-    const response = await axios.get(`/api/products?page=${currentPage}`);
-    setProducts(response.data.products);
-    setTotalPages(response.data.totalPages);
-  } catch (error) {
-    console.error('Error fetching products:', error);
-  }
-};
-```
-
-3단계: fetchCategories 구현
-스크립트: "카테고리 목록을 가져오는 fetchCategories 함수를 구현합니다."
-
-```javascript
-const fetchCategories = async () => {
-  try {
-    const response = await axios.get('/api/categories');
-    setCategories(response.data);
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-  }
-};
-```
-
-4단계: fetchSuppliers 구현
-스크립트: "공급업체 목록을 가져오는 fetchSuppliers 함수를 구현합니다."
-
-```javascript
-const fetchSuppliers = async () => {
-  try {
-    const response = await axios.get('/api/suppliers');
-    setSuppliers(response.data);
-  } catch (error) {
-    console.error('Error fetching suppliers:', error);
-  }
-};
-```
-
-5단계: handleSearch 구현
-스크립트: "검색 기능을 구현하는 handleSearch 함수를 만듭니다."
-
-```javascript
-const handleSearch = async (values) => {
-  try {
-    const response = await axios.get('/api/products/search', { params: values });
-    setProducts(response.data.products);
-    setTotalPages(response.data.totalPages);
-  } catch (error) {
-    console.error('Error searching products:', error);
-  }
-};
-```
-
-6단계: handleEdit 구현
-스크립트: "제품 수정 기능을 구현하는 handleEdit 함수를 만듭니다. 이 데모에서는 간단히 로그만 출력하겠습니다."
-
-```javascript
-const handleEdit = (productId) => {
-  console.log(`Editing product with ID: ${productId}`);
-  // 실제 구현에서는 여기에 수정 로직을 추가합니다.
-};
-```
-
-7단계: handleDelete 구현
-스크립트: "제품 삭제 기능을 구현하는 handleDelete 함수를 만듭니다."
-
-```javascript
-const handleDelete = async (productId) => {
-  try {
-    await axios.delete(`/api/products/${productId}`);
-    fetchProducts();
-  } catch (error) {
-    console.error('Error deleting product:', error);
-  }
-};
-```
-
-8단계: handleAddProduct 구현
-스크립트: "새 제품 추가 기능을 구현하는 handleAddProduct 함수를 만듭니다. 이 데모에서는 간단히 로그만 출력하겠습니다."
-
-```javascript
-const handleAddProduct = () => {
-  console.log('Adding a new product');
-  // 실제 구현에서는 여기에 제품 추가 로직을 구현합니다.
-};
-```
-
-9단계: 검색 폼 구현
-스크립트: "이제 검색 폼을 구현합니다. Formik을 사용하여 폼을 관리하고, React-Bootstrap 컴포넌트를 사용하여 UI를 구성합니다."
-
-```javascript
-<Formik
-  initialValues={{ productName: '', categoryId: '', supplierId: '' }}
-  onSubmit={handleSearch}
->
-  {({ values, handleChange, handleSubmit }) => (
-    <Form onSubmit={handleSubmit}>
-      <Row className="mb-3">
-        <Col>
-          <BootstrapForm.Control
-            name="productName"
-            value={values.productName}
-            onChange={handleChange}
-            placeholder="Product Name"
-          />
-        </Col>
-        <Col>
-          <BootstrapForm.Select
-            name="categoryId"
-            value={values.categoryId}
-            onChange={handleChange}
-          >
-            <option value="">Select Category</option>
-            {categories.map(category => (
-              <option key={category.categoryId} value={category.categoryId}>
-                {category.categoryName}
-              </option>
-            ))}
-          </BootstrapForm.Select>
-        </Col>
-        <Col>
-          <BootstrapForm.Select
-            name="supplierId"
-            value={values.supplierId}
-            onChange={handleChange}
-          >
-            <option value="">Select Supplier</option>
-            {suppliers.map(supplier => (
-              <option key={supplier.supplierId} value={supplier.supplierId}>
-                {supplier.companyName}
-              </option>
-            ))}
-          </BootstrapForm.Select>
-        </Col>
-        <Col>
-          <Button type="submit">Search</Button>
-        </Col>
-      </Row>
-    </Form>
-  )}
-</Formik>
-```
-
-10단계: 제품 테이블 구현
-스크립트: "제품 목록을 보여주는 테이블을 구현합니다."
-
-```javascript
-<Table striped bordered hover>
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Product Name</th>
-      <th>Category</th>
-      <th>Supplier</th>
-      <th>Unit Price</th>
-      <th>Units In Stock</th>
-      <th>Units On Order</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {products.map(product => (
-      <tr key={product.productId}>
-        <td>{product.productId}</td>
-        <td>{product.productName}</td>
-        <td>{product.category.categoryName}</td>
-        <td>{product.supplier.companyName}</td>
-        <td>{product.unitPrice}</td>
-        <td>{product.unitsInStock}</td>
-        <td>{product.unitsOnOrder}</td>
-        <td>
-          <Button variant="primary" className="me-2" onClick={() => handleEdit(product.productId)}>Edit</Button>
-          <Button variant="danger" onClick={() => handleDelete(product.productId)}>Delete</Button>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</Table>
-```
-
-11단계: 페이지네이션 및 제품 추가 버튼 구현
-스크립트: "마지막으로, 페이지네이션과 새 제품 추가 버튼을 구현합니다."
-
-```javascript
-<Row className="mt-3">
-  <Col>
-    <Button variant="success" onClick={handleAddProduct}>Add Product</Button>
-  </Col>
-  <Col className="d-flex justify-content-end">
-    <Pagination>
-      {[...Array(totalPages).keys()].map(number => (
-        <Pagination.Item 
-          key={number + 1} 
-          active={number + 1 === currentPage}
-          onClick={() => setCurrentPage(number + 1)}
-        >
-          {number + 1}
-        </Pagination.Item>
-      ))}
-    </Pagination>
-  </Col>
-</Row>
-```
-
-이렇게 11단계로 나누어 데모를 진행할 수 있습니다. 각 단계에서 코드를 추가하면서 기능을 설명하고, 최종적으로 완성된 제품 관리 폼을 보여줄 수 있습니다.
