@@ -1,3 +1,5 @@
+
+
 ```
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -109,4 +111,176 @@ const EmployeeManagementForm = () => {
 };
 
 export default EmployeeManagementForm;
+```
+
+```
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using YourNamespace.Server.Models;
+using System.Linq;
+
+namespace YourNamespace.Server.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class EmployeesController : ControllerBase
+    {
+        private readonly NorthwindContext _context;
+        private const int PageSize = 10;
+
+        public EmployeesController(NorthwindContext context)
+        {
+            _context = context;
+        }
+
+        // ... (기존 메서드들 유지)
+
+        [HttpGet("territories")]
+        public async Task<IActionResult> GetTerritories()
+        {
+            var territories = await _context.Territories
+                .Select(t => new { t.TerritoryID, t.TerritoryDescription })
+                .ToListAsync();
+
+            return Ok(territories);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetEmployee(int id)
+        {
+            var employee = await _context.Employees
+                .Include(e => e.EmployeeTerritories)
+                .ThenInclude(et => et.Territory)
+                .Where(e => e.EmployeeID == id)
+                .Select(e => new
+                {
+                    e.EmployeeID,
+                    e.LastName,
+                    e.FirstName,
+                    e.Title,
+                    e.TitleOfCourtesy,
+                    e.BirthDate,
+                    e.HireDate,
+                    e.Address,
+                    e.City,
+                    e.Region,
+                    e.PostalCode,
+                    e.Country,
+                    e.HomePhone,
+                    e.Extension,
+                    e.Notes,
+                    Territories = e.EmployeeTerritories.Select(et => et.TerritoryID).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (employee == null)
+                return NotFound();
+
+            return Ok(employee);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateEmployee([FromBody] EmployeeViewModel employeeVM)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var employee = new Employee
+            {
+                // Map properties from ViewModel to Entity
+                LastName = employeeVM.LastName,
+                FirstName = employeeVM.FirstName,
+                // ... (map other properties)
+            };
+
+            _context.Employees.Add(employee);
+            await _context.SaveChangesAsync();
+
+            // Add territories
+            if (employeeVM.Territories != null)
+            {
+                foreach (var territoryId in employeeVM.Territories)
+                {
+                    _context.EmployeeTerritories.Add(new EmployeeTerritory
+                    {
+                        EmployeeID = employee.EmployeeID,
+                        TerritoryID = territoryId
+                    });
+                }
+                await _context.SaveChangesAsync();
+            }
+
+            return CreatedAtAction(nameof(GetEmployee), new { id = employee.EmployeeID }, employee);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] EmployeeViewModel employeeVM)
+        {
+            if (id != employeeVM.EmployeeID)
+                return BadRequest();
+
+            var employee = await _context.Employees.FindAsync(id);
+            if (employee == null)
+                return NotFound();
+
+            // Update employee properties
+            employee.LastName = employeeVM.LastName;
+            employee.FirstName = employeeVM.FirstName;
+            // ... (update other properties)
+
+            // Update territories
+            var currentTerritories = await _context.EmployeeTerritories
+                .Where(et => et.EmployeeID == id)
+                .ToListAsync();
+
+            // Remove territories that are not in the updated list
+            foreach (var territory in currentTerritories)
+            {
+                if (!employeeVM.Territories.Contains(territory.TerritoryID))
+                {
+                    _context.EmployeeTerritories.Remove(territory);
+                }
+            }
+
+            // Add new territories
+            foreach (var territoryId in employeeVM.Territories)
+            {
+                if (!currentTerritories.Any(t => t.TerritoryID == territoryId))
+                {
+                    _context.EmployeeTerritories.Add(new EmployeeTerritory
+                    {
+                        EmployeeID = id,
+                        TerritoryID = territoryId
+                    });
+                }
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!EmployeeExists(id))
+                    return NotFound();
+                else
+                    throw;
+            }
+
+            return NoContent();
+        }
+
+        // ... (기존 메서드들 유지)
+    }
+
+    public class EmployeeViewModel
+    {
+        public int EmployeeID { get; set; }
+        public string LastName { get; set; }
+        public string FirstName { get; set; }
+        // ... (다른 Employee 속성들)
+        public List<string> Territories { get; set; }
+    }
+}
 ```
