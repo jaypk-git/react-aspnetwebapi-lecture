@@ -284,3 +284,97 @@ namespace YourNamespace.Server.Controllers
     }
 }
 ```
+
+```
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import { Container, Row, Col, Button, Table, Modal, Form as BootstrapForm, Pagination, Card } from 'react-bootstrap';
+import * as Yup from 'yup';
+
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+// ... (이전 코드는 그대로 유지)
+
+// API 함수들에 새로운 함수 추가
+const fetchTerritories = async () => {
+  const response = await fetch('/api/territories');
+  if (!response.ok) throw new Error('Network response was not ok');
+  return response.json();
+};
+
+// Validation schema 수정
+const employeeSchema = Yup.object().shape({
+  // ... (기존 필드들)
+  territories: Yup.array().of(Yup.string())
+});
+
+const EmployeeManagementForm = () => {
+  // ... (기존 코드 유지)
+
+  const { data: territoriesData } = useQuery('territories', fetchTerritories);
+
+  // ... (기존 코드 유지)
+
+  return (
+    <Container className="mt-4">
+      {/* ... (기존 코드 유지) */}
+
+      <Modal show={showModal} onHide={handleCloseModal} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>{editingEmployee ? '직원 정보 수정' : '새 직원 추가'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Formik
+            initialValues={{
+              // ... (기존 필드들)
+              territories: editingEmployee?.territories || []
+            }}
+            validationSchema={employeeSchema}
+            onSubmit={handleSaveEmployee}
+          >
+            {({ handleSubmit, handleChange, values, touched, errors, setFieldValue }) => (
+              <Form onSubmit={handleSubmit}>
+                {/* ... (기존 폼 필드들) */}
+
+                <BootstrapForm.Group className="mb-3">
+                  <BootstrapForm.Label>담당 지역</BootstrapForm.Label>
+                  <div>
+                    {territoriesData?.map(territory => (
+                      <BootstrapForm.Check
+                        key={territory.territoryID}
+                        type="checkbox"
+                        id={`territory-${territory.territoryID}`}
+                        label={territory.territoryDescription}
+                        checked={values.territories.includes(territory.territoryID)}
+                        onChange={(e) => {
+                          const territoryId = territory.territoryID;
+                          if (e.target.checked) {
+                            setFieldValue('territories', [...values.territories, territoryId]);
+                          } else {
+                            setFieldValue('territories', values.territories.filter(id => id !== territoryId));
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <ErrorMessage name="territories" component="div" className="text-danger" />
+                </BootstrapForm.Group>
+
+                <Button variant="primary" type="submit">
+                  저장
+                </Button>
+                <Button variant="secondary" onClick={handleCloseModal}>
+                  취소
+                </Button>
+              </Form>
+            )}
+          </Formik>
+        </Modal.Body>
+      </Modal>
+    </Container>
+  );
+};
+
+export default EmployeeManagementForm;
+```
