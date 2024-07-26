@@ -124,16 +124,6 @@ namespace YourNamespace.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using YourNamespace.Server.Models;
-using System.Linq;
-
-namespace YourNamespace.Server.Controllers
-{
-    [Route("api/[controller]")]
-    [ApiController]
     public class EmployeesController : ControllerBase
     {
         private readonly NorthwindContext _context;
